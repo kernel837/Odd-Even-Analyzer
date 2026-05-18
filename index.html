@@ -1,1 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv Even/Odd Analyzer</title>
+    
+    <meta name="theme-color" content="#111827">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Deriv%20EO%20Analyzer%22,%22short_name%22:%22EO%20Analyzer%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23111827%22,%22theme_color%22:%22%23111827%22,%22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/423/423786.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22,%22purpose%22:%22any%20maskable%22}]}">
 
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-3 select-none text-xs">
+
+    <div class="max-w-md mx-auto">
+        
+        <div class="mb-2 flex justify-between items-center text-[10px]">
+            <a href="rise-fall.html" class="text-purple-400 hover:underline">← Rise/Fall</a>
+            <a href="index.html" class="text-emerald-400 hover:underline">Matches Dashboard →</a>
+        </div>
+
+        <div class="bg-gray-800 p-3 rounded-xl shadow-lg mb-3 flex flex-col gap-2">
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-medium text-gray-400 mb-0.5">Market</label>
+                    <select id="marketSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500">
+                        <option value="1HZ10V" selected>Volatility 10 (1s) Index</option>
+                        <option value="1HZ15V">Volatility 15 (1s) Index</option>
+                        <option value="1HZ25V">Volatility 25 (1s) Index</option>
+                        <option value="1HZ30V">Volatility 30 (1s) Index</option>
+                        <option value="1HZ50V">Volatility 50 (1s) Index</option>
+                        <option value="1HZ75V">Volatility 75 (1s) Index</option>
+                        <option value="1HZ90V">Volatility 90 (1s) Index</option>
+                        <option value="1HZ100V">Volatility 100 (1s) Index</option>
+                        
+                        <option value="R_10">Volatility 10 Index</option>
+                        <option value="R_25">Volatility 25 Index</option>
+                        <option value="R_50">Volatility 50 Index</option>
+                        <option value="R_75">Volatility 75 Index</option>
+                        <option value="R_100">Volatility 100 Index</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-medium text-gray-400 mb-0.5">Sample Ticks</label>
+                    <input type="number" id="sampleSize" value="100" min="20" max="500" class="w-20 bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-center text-white focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+            <button id="connectBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold py-1.5 rounded-lg transition duration-200">
+                Connect WebSocket
+            </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 mb-3 text-center">
+            <div class="bg-gray-800 p-2 rounded-xl shadow-lg">
+                <span class="text-[9px] text-gray-400 uppercase">Last Price</span>
+                <div id="latestPrice" class="font-mono font-bold mt-1 text-blue-400 text-xs truncate">-</div>
+            </div>
+            <div class="bg-gray-800 p-2 rounded-xl shadow-lg">
+                <span class="text-[9px] text-gray-400 uppercase">Last Digit</span>
+                <div id="latestDigit" class="text-xl font-black text-yellow-400 mt-0.5">-</div>
+            </div>
+            <div class="bg-gray-800 p-2 rounded-xl shadow-lg">
+                <span class="text-[9px] text-purple-400 uppercase">Current Bias</span>
+                <div id="marketBias" class="text-xs font-bold mt-1 text-purple-400">Neutral</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <div id="evenBox" class="bg-gray-800 p-3 rounded-xl shadow-lg border-b-4 border-emerald-500 text-center">
+                <span class="text-emerald-400 font-bold text-[11px] tracking-wide uppercase">Even (0,2,4,6,8)</span>
+                <div id="evenPct" class="text-2xl font-black text-white mt-1">0%</div>
+                <span id="evenCount" class="text-[9px] text-gray-400">(0 Ticks)</span>
+            </div>
+            <div id="oddBox" class="bg-gray-800 p-3 rounded-xl shadow-lg border-b-4 border-rose-500 text-center">
+                <span class="text-rose-400 font-bold text-[11px] tracking-wide uppercase">Odd (1,3,5,7,9)</span>
+                <div id="oddPct" class="text-2xl font-black text-white mt-1">0%</div>
+                <span id="oddCount" class="text-[9px] text-gray-400">(0 Ticks)</span>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 px-3 py-1.5 rounded-xl shadow-lg mb-3 flex justify-between items-center border border-amber-500/20">
+            <span class="text-gray-400 text-[10px] font-semibold uppercase tracking-wider">Pattern Streak Tracker</span>
+            <div id="streakDisplay" class="font-bold text-amber-400 text-xs">Awaiting Ticks</div>
+        </div>
+
+        <div class="bg-gray-800 p-3 rounded-xl shadow-lg">
+            <div class="h-40">
+                <canvas id="splitChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let tickHistory = [];
+        let lastType = null;
+        let currentStreak = 1;
+        const appId = 1089;
+
+        const marketSelect = document.getElementById('marketSelect');
+        const sampleSizeInput = document.getElementById('sampleSize');
+        const connectBtn = document.getElementById('connectBtn');
+        const latestPriceEl = document.getElementById('latestPrice');
+        const latestDigitEl = document.getElementById('latestDigit');
+        const marketBiasEl = document.getElementById('marketBias');
+        
+        const evenPctEl = document.getElementById('evenPct');
+        const evenCountEl = document.getElementById('evenCount');
+        const oddPctEl = document.getElementById('oddPct');
+        const oddCountEl = document.getElementById('oddCount');
+        const streakDisplayEl = document.getElementById('streakDisplay');
+
+        // Doughnut Chart Setup
+        const ctx = document.getElementById('splitChart').getContext('2d');
+        const splitChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Even Ticks', 'Odd Ticks'],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ['rgba(16, 185, 129, 0.75)', 'rgba(239, 68, 68, 0.75)'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#9CA3AF', font: { size: 10 } }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        function connectToDeriv() {
+            if (ws) ws.close();
+            const market = marketSelect.value;
+            tickHistory = [];
+            lastType = null;
+            currentStreak = 1;
+            
+            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${appId}`);
+
+            ws.onopen = () => {
+                connectBtn.textContent = 'Disconnect';
+                connectBtn.classList.replace('bg-emerald-500', 'bg-rose-500');
+                ws.send(JSON.stringify({ ticks: market }));
+            };
+
+            ws.onmessage = (msg) => {
+                const data = JSON.parse(msg.data);
+                if (data.msg_type === 'tick' && data.tick) { processTick(data.tick); }
+            };
+
+            ws.onclose = () => { disconnectFromDeriv(); };
+        }
+
+        function disconnectFromDeriv() {
+            if (ws) ws.close();
+            ws = null;
+            connectBtn.textContent = 'Connect WebSocket';
+            connectBtn.classList.replace('bg-rose-500', 'bg-emerald-500');
+        }
+
+        function processTick(tick) {
+            const price = tick.quote;
+            const priceStr = price.toFixed(tick.pip_size);
+            const lastDigit = parseInt(priceStr.slice(-1));
+            const maxTicks = parseInt(sampleSizeInput.value) || 100;
+
+            latestPriceEl.textContent = priceStr;
+            latestDigitEl.textContent = lastDigit;
+
+            // Determine Even or Odd status
+            const currentType = (lastDigit % 2 === 0) ? 'EVEN' : 'ODD';
+
+            // Handle run streak math tracking
+            if (lastType !== null) {
+                if (currentType === lastType) {
+                    currentStreak++;
+                    streakDisplayEl.textContent = `⚡ ${currentType} STREAK: ${currentStreak}x IN A ROW`;
+                    streakDisplayEl.className = currentType === 'EVEN' ? 'font-bold text-emerald-400 text-xs animate-pulse' : 'font-bold text-rose-400 text-xs animate-pulse';
+                } else {
+                    streakDisplayEl.textContent = `Broken: Last run was ${lastType} (${currentStreak}x)`;
+                    streakDisplayEl.className = 'font-bold text-gray-400 text-xs';
+                    currentStreak = 1;
+                }
+            }
+            lastType = currentType;
+
+            // Balance moving data history frame
+            tickHistory.push(lastDigit);
+            if (tickHistory.length > maxTicks) tickHistory.shift();
+
+            let evenCount = 0;
+            let oddCount = 0;
+            const total = tickHistory.length;
+
+            tickHistory.forEach(digit => {
+                if (digit % 2 === 0) evenCount++;
+                else oddCount++;
+            });
+
+            const evenPct = total > 0 ? ((evenCount / total) * 100) : 0;
+            const oddPct = total > 0 ? ((oddCount / total) * 100) : 0;
+
+            // Update UI status data indicators
+            evenPctEl.textContent = `${evenPct.toFixed(0)}%`;
+            evenCountEl.textContent = `(${evenCount} Ticks)`;
+
+            oddPctEl.textContent = `${oddPct.toFixed(0)}%`;
+            oddCountEl.textContent = `(${oddCount} Ticks)`;
+
+            // Render distribution skew biases
+            if (evenPct > oddPct + 6) {
+                marketBiasEl.textContent = "🟢 Even Skew";
+                marketBiasEl.className = "text-xs font-bold mt-1 text-emerald-400";
+            } else if (oddPct > evenPct + 6) {
+                marketBiasEl.textContent = "🔴 Odd Skew";
+                marketBiasEl.className = "text-xs font-bold mt-1 text-rose-400";
+            } else {
+                marketBiasEl.textContent = "⚖️ Balanced";
+                marketBiasEl.className = "text-xs font-bold mt-1 text-amber-400";
+            }
+
+            // Repaint chart metrics
+            splitChart.data.datasets[0].data = [evenPct.toFixed(1), oddPct.toFixed(1)];
+            splitChart.update('none');
+        }
+
+        connectBtn.addEventListener('click', () => {
+            if (ws) { disconnectFromDeriv(); } else { connectToDeriv(); }
+        });
+
+        marketSelect.addEventListener('change', () => { if (ws) connectToDeriv(); });
+    </script>
+</body>
+</html>
