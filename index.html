@@ -3,54 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deriv Even/Odd Analyzer</title>
+    <title>Deriv Even/Odd Auto-Trader</title>
     
     <meta name="theme-color" content="#111827">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Deriv%20EO%20Analyzer%22,%22short_name%22:%22EO%20Analyzer%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23111827%22,%22theme_color%22:%22%23111827%22,%22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/423/423786.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22,%22purpose%22:%22any%20maskable%22}]}">
 
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen p-3 select-none text-xs">
 
     <div class="max-w-md mx-auto">
         
-        <div class="mb-2 flex justify-between items-center text-[10px]">
-            <a href="rise-fall.html" class="text-purple-400 hover:underline">← Rise/Fall</a>
-            <a href="index.html" class="text-emerald-400 hover:underline">Matches Dashboard →</a>
+        <div class="bg-gray-800 p-3 rounded-xl shadow-lg mb-3 border-b-4 border-gray-600" id="accountHeader">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Account Status</span>
+                <span id="headerAccountType" class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Disconnected</span>
+            </div>
+            <div class="flex justify-between items-end">
+                <div>
+                    <span class="text-[10px] text-blue-400 font-bold uppercase block">Even/Odd Auto-Trader</span>
+                    <div id="headerBalance" class="text-2xl font-black text-white">-</div>
+                </div>
+                <div id="connectionDot" class="h-3 w-3 rounded-full bg-rose-500 mb-1 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></div>
+            </div>
         </div>
 
         <div class="bg-gray-800 p-3 rounded-xl shadow-lg mb-3 flex flex-col gap-2">
-            <div class="flex gap-2">
+            
+            <button id="connectBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg border-b-4 border-blue-800 active:border-b-0 active:mt-1 transition-all mb-2 uppercase tracking-wider">
+                Connect to Server
+            </button>
+
+            <div class="mb-2">
+                <label class="block text-[10px] font-medium text-gray-400 mb-0.5">Deriv API Trading Token</label>
+                <input type="password" id="apiToken" placeholder="Paste Read/Trade API token here..." class="w-full bg-gray-900 border border-gray-600 rounded-lg px-2 py-1.5 text-white focus:outline-none focus:border-blue-500 font-mono text-xs">
+            </div>
+
+            <div class="flex gap-2 mb-2">
                 <div class="flex-1">
                     <label class="block text-[10px] font-medium text-gray-400 mb-0.5">Market</label>
-                    <select id="marketSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-white focus:outline-none focus:border-emerald-500">
+                    <select id="marketSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-white focus:outline-none focus:border-blue-500">
                         <option value="1HZ10V" selected>Volatility 10 (1s) Index</option>
-                        <option value="1HZ15V">Volatility 15 (1s) Index</option>
                         <option value="1HZ25V">Volatility 25 (1s) Index</option>
-                        <option value="1HZ30V">Volatility 30 (1s) Index</option>
                         <option value="1HZ50V">Volatility 50 (1s) Index</option>
                         <option value="1HZ75V">Volatility 75 (1s) Index</option>
-                        <option value="1HZ90V">Volatility 90 (1s) Index</option>
                         <option value="1HZ100V">Volatility 100 (1s) Index</option>
-                        
                         <option value="R_10">Volatility 10 Index</option>
-                        <option value="R_25">Volatility 25 Index</option>
-                        <option value="R_50">Volatility 50 Index</option>
-                        <option value="R_75">Volatility 75 Index</option>
                         <option value="R_100">Volatility 100 Index</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-medium text-gray-400 mb-0.5">Sample Ticks</label>
-                    <input type="number" id="sampleSize" value="100" min="20" max="500" class="w-20 bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-center text-white focus:outline-none focus:border-emerald-500">
+                    <input type="number" id="sampleSize" value="50" min="20" max="500" class="w-20 bg-gray-700 border border-gray-600 rounded-lg px-2 py-1.5 text-center text-white focus:outline-none focus:border-blue-500">
                 </div>
             </div>
-            <button id="connectBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold py-1.5 rounded-lg transition duration-200">
-                Connect WebSocket
+
+            <div class="grid grid-cols-3 gap-2 mb-1 border-b border-gray-700 pb-3">
+                <div>
+                    <label class="block text-[10px] font-medium text-gray-400 mb-0.5">Base Stake ($)</label>
+                    <input type="number" id="stakeAmount" value="1.00" step="0.50" min="0.35" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-center text-white font-bold focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-medium text-gray-400 mb-0.5">Target Contract</label>
+                    <select id="tradeLogic" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-1 text-center text-white focus:outline-none focus:border-blue-500">
+                        <option value="TREND" selected>Follow Trend</option>
+                        <option value="REVERSE">Reverse Trend</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-emerald-400 mb-0.5">Trigger %</label>
+                    <input type="number" id="triggerPct" value="70" min="50" max="100" class="w-full bg-gray-900 border border-emerald-500/50 rounded-lg px-2 py-1 text-center text-emerald-400 font-black focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+
+            <button id="tradeToggleBtn" class="w-full bg-gray-600 text-gray-400 font-bold py-3 rounded-lg mt-1 transition-colors uppercase tracking-wider" disabled>
+                Start Auto-Trade
             </button>
         </div>
 
@@ -83,8 +112,15 @@
         </div>
 
         <div class="bg-gray-800 px-3 py-1.5 rounded-xl shadow-lg mb-3 flex justify-between items-center border border-amber-500/20">
-            <span class="text-gray-400 text-[10px] font-semibold uppercase tracking-wider">Pattern Streak Tracker</span>
+            <span class="text-gray-400 text-[10px] font-semibold uppercase tracking-wider">Pattern Streak</span>
             <div id="streakDisplay" class="font-bold text-amber-400 text-xs">Awaiting Ticks</div>
+        </div>
+
+        <div class="bg-gray-800 p-3 rounded-xl shadow-lg mb-3">
+            <span class="text-gray-400 text-[10px] font-semibold uppercase tracking-wider block mb-1">Execution Log</span>
+            <div id="tradeLog" class="h-32 overflow-y-auto font-mono text-[10px] space-y-1 text-gray-300 bg-gray-900 rounded p-1.5 border border-gray-700/50">
+                System Ready. Waiting for connection...
+            </div>
         </div>
 
         <div class="bg-gray-800 p-3 rounded-xl shadow-lg">
@@ -95,19 +131,30 @@
     </div>
 
     <script>
+        // GitHub Pages Dynamic App ID
+        let appId = 1089; 
+        if (window.location.hostname.includes("github.io")) {
+            appId = '33kZ8bEJo81VjhPQUtkhI'; 
+        }
+
         let ws = null;
         let tickHistory = [];
         let lastType = null;
         let currentStreak = 1;
-        const appId = 1089;
+        
+        let isAuthorized = false;
+        let isTrading = false;
+        let autoTradeEnabled = false;
 
-        const marketSelect = document.getElementById('marketSelect');
-        const sampleSizeInput = document.getElementById('sampleSize');
         const connectBtn = document.getElementById('connectBtn');
+        const tradeToggleBtn = document.getElementById('tradeToggleBtn');
+        const marketSelect = document.getElementById('marketSelect');
+        const tradeLogEl = document.getElementById('tradeLog');
+        const connectionDot = document.getElementById('connectionDot');
+
         const latestPriceEl = document.getElementById('latestPrice');
         const latestDigitEl = document.getElementById('latestDigit');
         const marketBiasEl = document.getElementById('marketBias');
-        
         const evenPctEl = document.getElementById('evenPct');
         const evenCountEl = document.getElementById('evenCount');
         const oddPctEl = document.getElementById('oddPct');
@@ -129,59 +176,206 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#9CA3AF', font: { size: 10 } }
-                    }
-                },
+                plugins: { legend: { display: false } },
                 cutout: '70%'
             }
         });
 
+        // Event Listeners
+        connectBtn.addEventListener('click', () => {
+            if (isAuthorized || ws !== null) {
+                disconnectFromDeriv();
+            } else {
+                connectToDeriv();
+            }
+        });
+
+        tradeToggleBtn.addEventListener('click', () => {
+            toggleTrading();
+        });
+
+        marketSelect.addEventListener('change', () => {
+            if (isAuthorized) {
+                disconnectFromDeriv();
+                setTimeout(() => connectToDeriv(), 500);
+            }
+        });
+
+        function logTrade(message, type = 'info') {
+            const timeStr = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            
+            let color = 'text-blue-400';
+            if(type === 'error') color = 'text-rose-500 font-bold';
+            if(type === 'warn') color = 'text-amber-400 font-bold';
+            if(type === 'win') color = 'text-emerald-400 font-black';
+            if(type === 'neutral') color = 'text-gray-400';
+
+            logEntry.className = color;
+            logEntry.innerHTML = `[${timeStr}] ${message}`;
+            tradeLogEl.insertBefore(logEntry, tradeLogEl.firstChild);
+            
+            if (tradeLogEl.children.length > 25) {
+                tradeLogEl.removeChild(tradeLogEl.lastChild);
+            }
+        }
+
         function connectToDeriv() {
-            if (ws) ws.close();
-            const market = marketSelect.value;
+            const token = document.getElementById('apiToken').value.trim();
+            if (!token) {
+                alert("Please paste your API Trading Token.");
+                return;
+            }
+
+            isAuthorized = false;
+            isTrading = false;
+            autoTradeEnabled = false; 
             tickHistory = [];
             lastType = null;
             currentStreak = 1;
             
-            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${appId}`);
+            logTrade(`Connecting... (Using App ID: ${appId})`, 'neutral');
+            connectBtn.textContent = 'Connecting...';
+            connectBtn.className = "w-full bg-amber-500 text-gray-900 font-bold py-3 rounded-lg shadow-lg mb-2 uppercase tracking-wider";
+
+            try {
+                ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${appId}`);
+            } catch(e) {
+                logTrade("WebSocket creation blocked by browser.", 'error');
+                disconnectFromDeriv();
+                return;
+            }
 
             ws.onopen = () => {
-                connectBtn.textContent = 'Disconnect';
-                connectBtn.classList.replace('bg-emerald-500', 'bg-rose-500');
-                ws.send(JSON.stringify({ ticks: market }));
+                ws.send(JSON.stringify({ authorize: token }));
+            };
+
+            ws.onerror = (error) => {
+                logTrade("Connection Error! Check internet or Token.", 'error');
+                disconnectFromDeriv();
             };
 
             ws.onmessage = (msg) => {
                 const data = JSON.parse(msg.data);
-                if (data.msg_type === 'tick' && data.tick) { processTick(data.tick); }
+                
+                if (data.msg_type === 'authorize') {
+                    if (data.error) {
+                        logTrade(`Auth Failed: ${data.error.message}`, 'error');
+                        disconnectFromDeriv();
+                        return;
+                    }
+                    isAuthorized = true;
+                    
+                    connectBtn.textContent = 'Disconnect from Server';
+                    connectBtn.className = "w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-lg shadow-lg border-b-4 border-rose-800 active:border-b-0 active:mt-1 transition-all mb-2 uppercase tracking-wider";
+                    connectionDot.className = "h-3 w-3 rounded-full bg-emerald-500 mb-1 shadow-[0_0_8px_rgba(16,185,129,0.8)]";
+                    
+                    tradeToggleBtn.disabled = false;
+                    tradeToggleBtn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold py-3 rounded-lg mt-1 transition-colors uppercase tracking-wider shadow-lg";
+
+                    const isVirtual = data.authorize.is_virtual;
+                    document.getElementById('headerAccountType').textContent = isVirtual ? "DEMO ACCOUNT" : "REAL ACCOUNT";
+                    document.getElementById('headerAccountType').className = isVirtual ? "text-[10px] text-amber-400 font-black tracking-widest uppercase animate-pulse" : "text-[10px] text-emerald-400 font-black tracking-widest uppercase animate-pulse";
+                    document.getElementById('headerBalance').textContent = `${data.authorize.balance.toFixed(2)} ${data.authorize.currency}`;
+
+                    logTrade(`Success! Logged in as ${data.authorize.loginid}.`);
+                    
+                    ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+                    ws.send(JSON.stringify({ ticks: document.getElementById('marketSelect').value }));
+                }
+
+                if (data.msg_type === 'balance') {
+                    document.getElementById('headerBalance').textContent = `${data.balance.balance.toFixed(2)} ${data.balance.currency}`;
+                }
+
+                if (data.msg_type === 'tick' && data.tick) {
+                    processTick(data.tick);
+                }
+
+                if (data.msg_type === 'buy') {
+                    if (data.error) {
+                        logTrade(`Buy Error: ${data.error.message}`, 'error');
+                        setTimeout(() => { isTrading = false; }, 2000); 
+                    } else {
+                        logTrade(`Trade Executed! Contract ID: ${data.buy.contract_id}`, 'warn');
+                        ws.send(JSON.stringify({
+                            proposal_open_contract: 1,
+                            contract_id: data.buy.contract_id,
+                            subscribe: 1
+                        }));
+                    }
+                }
+
+                if (data.msg_type === 'proposal_open_contract') {
+                    const contract = data.proposal_open_contract;
+                    if (contract && contract.is_sold) {
+                        if (contract.status === 'won') {
+                            logTrade(`WIN! Secured +$${contract.profit.toFixed(2)} profit.`, 'win');
+                        } else {
+                            logTrade(`LOSS. Contract ended OTM (-$${Math.abs(contract.profit).toFixed(2)}).`, 'error');
+                        }
+                        // Unlock trading for the next setup
+                        setTimeout(() => { isTrading = false; }, 1500);
+                    }
+                }
             };
 
-            ws.onclose = () => { disconnectFromDeriv(); };
+            ws.onclose = () => { 
+                if (isAuthorized) disconnectFromDeriv(); 
+            };
+        }
+
+        function toggleTrading() {
+            autoTradeEnabled = !autoTradeEnabled;
+            
+            if (autoTradeEnabled) {
+                tradeToggleBtn.textContent = 'Stop Auto-Trade';
+                tradeToggleBtn.className = "w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-lg mt-1 transition-colors uppercase tracking-wider shadow-inner";
+                logTrade("Auto-Trading ENABLED. Waiting for Trigger %...", 'warn');
+            } else {
+                tradeToggleBtn.textContent = 'Start Auto-Trade';
+                tradeToggleBtn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold py-3 rounded-lg mt-1 transition-colors uppercase tracking-wider";
+                logTrade("Auto-Trading STOPPED.", 'neutral');
+            }
         }
 
         function disconnectFromDeriv() {
-            if (ws) ws.close();
-            ws = null;
-            connectBtn.textContent = 'Connect WebSocket';
-            connectBtn.classList.replace('bg-rose-500', 'bg-emerald-500');
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            
+            isAuthorized = false;
+            isTrading = false;
+            autoTradeEnabled = false;
+
+            connectBtn.textContent = 'Connect to Server';
+            connectBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg border-b-4 border-blue-800 active:border-b-0 active:mt-1 transition-all mb-2 uppercase tracking-wider";
+            
+            tradeToggleBtn.disabled = true;
+            tradeToggleBtn.textContent = 'Start Auto-Trade';
+            tradeToggleBtn.className = "w-full bg-gray-600 text-gray-400 font-bold py-3 rounded-lg mt-1 transition-colors uppercase tracking-wider";
+            
+            connectionDot.className = "h-3 w-3 rounded-full bg-rose-500 mb-1 shadow-[0_0_8px_rgba(244,63,94,0.8)]";
+            document.getElementById('headerBalance').textContent = "-";
+            document.getElementById('headerAccountType').textContent = "Disconnected";
+            document.getElementById('headerAccountType').className = "text-[10px] text-gray-500 font-bold tracking-widest uppercase";
+            
+            logTrade("Disconnected from server.", 'error');
         }
 
         function processTick(tick) {
             const price = tick.quote;
             const priceStr = price.toFixed(tick.pip_size);
             const lastDigit = parseInt(priceStr.slice(-1));
-            const maxTicks = parseInt(sampleSizeInput.value) || 100;
+            const maxTicks = parseInt(document.getElementById('sampleSize').value) || 100;
+            const targetTrigger = parseInt(document.getElementById('triggerPct').value) || 70;
 
             latestPriceEl.textContent = priceStr;
             latestDigitEl.textContent = lastDigit;
 
-            // Determine Even or Odd status
             const currentType = (lastDigit % 2 === 0) ? 'EVEN' : 'ODD';
 
-            // Handle run streak math tracking
             if (lastType !== null) {
                 if (currentType === lastType) {
                     currentStreak++;
@@ -193,53 +387,4 @@
                     currentStreak = 1;
                 }
             }
-            lastType = currentType;
-
-            // Balance moving data history frame
-            tickHistory.push(lastDigit);
-            if (tickHistory.length > maxTicks) tickHistory.shift();
-
-            let evenCount = 0;
-            let oddCount = 0;
-            const total = tickHistory.length;
-
-            tickHistory.forEach(digit => {
-                if (digit % 2 === 0) evenCount++;
-                else oddCount++;
-            });
-
-            const evenPct = total > 0 ? ((evenCount / total) * 100) : 0;
-            const oddPct = total > 0 ? ((oddCount / total) * 100) : 0;
-
-            // Update UI status data indicators
-            evenPctEl.textContent = `${evenPct.toFixed(0)}%`;
-            evenCountEl.textContent = `(${evenCount} Ticks)`;
-
-            oddPctEl.textContent = `${oddPct.toFixed(0)}%`;
-            oddCountEl.textContent = `(${oddCount} Ticks)`;
-
-            // Render distribution skew biases
-            if (evenPct > oddPct + 6) {
-                marketBiasEl.textContent = "🟢 Even Skew";
-                marketBiasEl.className = "text-xs font-bold mt-1 text-emerald-400";
-            } else if (oddPct > evenPct + 6) {
-                marketBiasEl.textContent = "🔴 Odd Skew";
-                marketBiasEl.className = "text-xs font-bold mt-1 text-rose-400";
-            } else {
-                marketBiasEl.textContent = "⚖️ Balanced";
-                marketBiasEl.className = "text-xs font-bold mt-1 text-amber-400";
-            }
-
-            // Repaint chart metrics
-            splitChart.data.datasets[0].data = [evenPct.toFixed(1), oddPct.toFixed(1)];
-            splitChart.update('none');
-        }
-
-        connectBtn.addEventListener('click', () => {
-            if (ws) { disconnectFromDeriv(); } else { connectToDeriv(); }
-        });
-
-        marketSelect.addEventListener('change', () => { if (ws) connectToDeriv(); });
-    </script>
-</body>
-</html>
+        
